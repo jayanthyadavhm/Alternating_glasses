@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glass Alternation Simulation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .glass {
+            width: 30px;
+            height: 50px;
+            display: inline-block;
+            text-align: center;
+            line-height: 50px;
+            margin: 5px;
+            border: 1px solid #000;
+        }
+        .filled {
+            background-color: #00f;
+            color: #fff;
+        }
+        .empty {
+            background-color: #fff;
+            color: #000;
+        }
+        .input-section {
+            margin-bottom: 20px;
+        }
+        .output-section {
+            margin-top: 20px;
+        }
+        .pointer {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Glass Alternation Simulation</h1>
+    <div class="input-section">
+        <div>
+            <label for="numGlasses">Number of filled (and empty) glasses (n): </label>
+            <input type="number" id="numGlasses" min="1">
+        </div>
+        <div>
+            <label for="glassesInput">Enter the glasses (1 for filled, 0 for empty): </label>
+            <input type="text" id="glassesInput" placeholder="e.g., 1 0 1 0 0 1">
+        </div>
+        <button onclick="simulate()">Simulate</button>
+    </div>
+    <div class="output-section">
+        <h2>Initial State:</h2>
+        <div id="initialState"></div>
+        <h2>Simulation:</h2>
+        <div id="simulationState"></div>
+        <div id="pointers"></div>
+        <h2>Final State:</h2>
+        <div id="finalState"></div>
+        <h2>Minimum number of swaps: <span id="swapCount"></span></h2>
+    </div>
+
+    <script>
+        function createGlassElement(value, index) {
+            const glass = document.createElement('div');
+            glass.className = 'glass ' + (value === 1 ? 'filled' : 'empty');
+            glass.innerText = value;
+            glass.id = glass-${index};
+            return glass;
+        }
+
+        function renderGlasses(containerId, glasses) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            glasses.forEach((value, index) => {
+                container.appendChild(createGlassElement(value, index));
+            });
+        }
+
+        function swapGlasses(glasses, i, j) {
+            const temp = glasses[i];
+            glasses[i] = glasses[j];
+            glasses[j] = temp;
+        }
+
+        function updatePointers(i, j) {
+            const pointersDiv = document.getElementById('pointers');
+            pointersDiv.innerHTML = Pointer left: ${i}, Pointer right: ${j};
+        }
+
+        async function animateSwap(glasses, i, j) {
+            return new Promise(resolve => {
+                updatePointers(i, j);
+                setTimeout(() => {
+                    swapGlasses(glasses, i, j);
+                    renderGlasses('simulationState', glasses);
+                    resolve();
+                }, 1000); // Adjust the delay here (in milliseconds)
+            });
+        }
+
+        async function minSwapsToAlternate(glasses, n) {
+            let left = 0;
+            let right = 1;
+            let swaps = 0;
+
+            while (left < 2 * n && right < 2 * n) {
+                while (left < 2 * n && (left % 2 === 0 ? glasses[left] === 1 : glasses[left] === 0)) {
+                    left += 2;
+                }
+                while (right < 2 * n && (right % 2 === 1 ? glasses[right] === 0 : glasses[right] === 1)) {
+                    right += 2;
+                }
+
+                if (left < 2 * n && right < 2 * n) {
+                    await animateSwap(glasses, left, right);
+                    swaps++;
+                }
+            }
+
+            return swaps;
+        }
+
+        async function simulate() {
+            const n = parseInt(document.getElementById('numGlasses').value);
+            const glassesInput = document.getElementById('glassesInput').value.split(' ').map(Number);
+            if (glassesInput.length !== 2 * n) {
+                alert('Please enter the correct number of glasses.');
+                return;
+            }
+
+            renderGlasses('initialState', glassesInput.slice());
+            renderGlasses('simulationState', glassesInput.slice());
+
+            const swaps = await minSwapsToAlternate(glassesInput, n);
+
+            document.getElementById('swapCount').innerText = swaps;
+            renderGlasses('finalState', glassesInput);
+        }
+    </script>
+</body>
+</html>
